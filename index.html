@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>鹈鹕环海骑行 3D · Pelican Cycle Club</title>
+  <meta name="description" content="交互式 3D 鹈鹕骑自行车环海栈道体验：实时解析 IK 蹬踏、自定义 GLSL 海洋与大气着色器、程序化 Web Audio 海岸音效与物理交互。" />
+  <meta property="og:title" content="鹈鹕环海骑行 3D · Pelican Cycle Club" />
+  <meta property="og:description" content="驾驶海沫绿复古巡洋舰自行车，与佩戴护目镜和红围巾的鹈鹕一起驰骋在落日海岸木栈道！" />
+  <meta property="og:image" content="./poster.jpg" />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%232bb5a3'/%3E%3Cpath d='M16 36c6-12 22-14 34-6-6 6-14 9-22 8-4 0-8 2-12-2z' fill='%23f59e0b'/%3E%3Ccircle cx='28' cy='25' r='7' fill='%23fff8ee'/%3E%3Ccircle cx='30' cy='24' r='2.2' fill='%231e293b'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <!-- Fullscreen 3D Canvas Container -->
+  <div id="canvas-root"></div>
+
+  <!-- Loading Splash Screen -->
+  <div id="splash" class="splash">
+    <div class="splash-card">
+      <div class="splash-poster-wrap">
+        <img src="./poster.jpg" alt="Pelican Cycle Club Poster" class="splash-poster" />
+        <div class="splash-badge">WEBGL 3D · GLSL · IK · WEB AUDIO</div>
+      </div>
+      <div class="splash-body">
+        <h1>鹈鹕环海骑行 3D</h1>
+        <p class="splash-sub">Pelican Cycle Club · 实时交互式海岸 3D 体验</p>
+        <div class="splash-progress-track">
+          <div id="splash-progress" class="splash-progress-fill"></div>
+        </div>
+        <div class="splash-footer">
+          <span id="splash-status">正在构建 3D 海岸世界与机械传动...</span>
+          <button id="btn-enter" class="btn-primary hidden">开启海岸骑行</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Bar: Brand + Live Telemetry -->
+  <header class="hud-top">
+    <div class="brand-pill glass">
+      <span class="brand-dot"></span>
+      <div class="brand-text">
+        <strong>鹈鹕环海骑行 3D</strong>
+        <span>PELICAN CYCLE CLUB</span>
+      </div>
+    </div>
+
+    <div class="telemetry-pill glass" aria-label="实时骑行遥测">
+      <div class="stat">
+        <span class="stat-val" id="stat-speed">18.4</span>
+        <span class="stat-lbl">KM/H</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <span class="stat-val" id="stat-rpm">68</span>
+        <span class="stat-lbl">踏频 RPM</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <span class="stat-val" id="stat-dist">0.00</span>
+        <span class="stat-lbl">里程 KM</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat accent-amber">
+        <span class="stat-val" id="stat-fish">0</span>
+        <span class="stat-lbl">捕鱼数</span>
+      </div>
+    </div>
+
+    <div class="top-tools">
+      <button id="btn-sound" class="icon-btn glass" title="海岸音效与音乐 (M)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path id="sound-wave-1" d="M15.54 8.46a5 5 0 0 1 0 7.07" opacity="0.3"></path>
+          <path id="sound-wave-2" d="M19.07 4.93a10 10 0 0 1 0 14.14" opacity="0.3"></path>
+        </svg>
+        <span class="btn-txt">音效</span>
+      </button>
+      <button id="btn-music" class="icon-btn glass" title="海风旋律开关" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+        <span class="btn-txt">旋律</span>
+      </button>
+      <button id="btn-photo" class="icon-btn glass" title="拍摄 3D 明信片 (P)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        <span class="btn-txt">留影</span>
+      </button>
+      <button id="btn-panel-toggle" class="icon-btn glass active" title="收起/展开控制面板">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="21" x2="4" y2="14"></line>
+          <line x1="4" y1="10" x2="4" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12" y2="3"></line>
+          <line x1="20" y1="21" x2="20" y2="16"></line>
+          <line x1="20" y1="12" x2="20" y2="3"></line>
+          <line x1="1" y1="14" x2="7" y2="14"></line>
+          <line x1="9" y1="8" x2="15" y2="8"></line>
+          <line x1="17" y1="16" x2="23" y2="16"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Right Control Dock (Collapsible) -->
+  <aside id="control-dock" class="control-dock glass">
+    <div class="dock-section">
+      <div class="dock-label">
+        <span>镜头视角</span>
+        <span class="dock-hint">拖拽可自由旋转</span>
+      </div>
+      <div class="chip-grid" id="camera-chips">
+        <button class="chip active" data-cam="cinematic">电影环绕</button>
+        <button class="chip" data-cam="orbit">自由轨道</button>
+        <button class="chip" data-cam="side">经典侧拍</button>
+        <button class="chip" data-cam="pedal">踏板特写</button>
+        <button class="chip" data-cam="pov">鹈鹕视角</button>
+      </div>
+    </div>
+
+    <div class="dock-section">
+      <div class="dock-label">
+        <span>海岸天色</span>
+        <span class="dock-hint" id="mood-name">黄金落日</span>
+      </div>
+      <div class="mood-grid" id="mood-chips">
+        <button class="mood-btn active" data-mood="golden">
+          <span class="swatch swatch-golden"></span>黄金时刻
+        </button>
+        <button class="mood-btn" data-mood="noon">
+          <span class="swatch swatch-noon"></span>晴朗正午
+        </button>
+        <button class="mood-btn" data-mood="sunset">
+          <span class="swatch swatch-sunset"></span>瑰丽晚霞
+        </button>
+        <button class="mood-btn" data-mood="night">
+          <span class="swatch swatch-night"></span>星夜灯塔
+        </button>
+      </div>
+    </div>
+
+    <div class="dock-section">
+      <div class="dock-label">
+        <span>巡航速度</span>
+        <span class="dock-val" id="speed-slider-val">18 km/h</span>
+      </div>
+      <input id="speed-slider" type="range" min="0" max="42" step="1" value="18" class="range-slider" />
+    </div>
+
+    <div class="dock-section">
+      <div class="dock-label">
+        <span>栈道转向</span>
+        <span class="dock-hint">A / D 或 ← / →</span>
+      </div>
+      <input id="steer-slider" type="range" min="-100" max="100" step="1" value="0" class="range-slider" />
+    </div>
+
+    <div class="dock-section dock-poster-row">
+      <button id="btn-poster-modal" class="poster-mini-btn">
+        <img src="./poster.jpg" alt="Pelican Cycle Club" />
+        <div>
+          <strong>海岸俱乐部海报</strong>
+          <span>查看 AI 定制原画</span>
+        </div>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <!-- Bottom Action Bar -->
+  <footer class="hud-bottom">
+    <div class="action-bar glass">
+      <button id="act-bell" class="act-btn">
+        <span class="act-ico">🔔</span>
+        <span class="act-name">按车铃</span>
+        <kbd>B</kbd>
+      </button>
+      <button id="act-fish" class="act-btn">
+        <span class="act-ico">🐟</span>
+        <span class="act-name">投喂飞鱼</span>
+        <kbd>F</kbd>
+      </button>
+      <button id="act-wheelie" class="act-btn">
+        <span class="act-ico">🪽</span>
+        <span class="act-name">翘头展翅</span>
+        <kbd>E</kbd>
+      </button>
+      <button id="act-turbo" class="act-btn act-turbo">
+        <span class="act-ico">⚡</span>
+        <span class="act-name">海风冲刺</span>
+        <kbd>Space</kbd>
+      </button>
+    </div>
+    <div class="key-hint">
+      提示：按住 <kbd>A</kbd>/<kbd>D</kbd> 压弯转向 · 按住 <kbd>Space</kbd> 加速冲刺 · 鼠标拖拽旋转视角
+    </div>
+  </footer>
+
+  <!-- Postcard / Photo Preview Modal -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-card glass">
+      <div class="modal-head">
+        <h2 id="modal-title">3D 海岸明信片</h2>
+        <button id="modal-close" class="modal-close" aria-label="关闭">&times;</button>
+      </div>
+      <div class="modal-img-wrap">
+        <img id="modal-img" alt="Preview" />
+      </div>
+      <div class="modal-actions">
+        <a id="modal-download" class="btn-primary" download="pelican-cycle-club-3d.png">下载高清明信片</a>
+        <button id="modal-close-2" class="btn-secondary">返回骑行</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
